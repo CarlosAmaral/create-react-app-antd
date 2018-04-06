@@ -2,6 +2,7 @@
 
 const autoprefixer = require('autoprefixer');
 const path = require('path');
+const fs = require('fs');
 const webpack = require('webpack');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const CaseSensitivePathsPlugin = require('case-sensitive-paths-webpack-plugin');
@@ -21,6 +22,10 @@ const publicPath = '/';
 const publicUrl = '';
 // Get environment variables to inject into our app.
 const env = getClientEnvironment(publicUrl);
+
+// Ant Design Webpack Config
+const lessToJs = require('less-vars-to-js');
+const themeVariables = lessToJs(fs.readFileSync(path.join(__dirname, './../src/ant-theme-vars.less'), 'utf8'));
 
 // This is the development configuration.
 // It is focused on developer experience and fast rebuilds.
@@ -82,7 +87,7 @@ module.exports = {
     // https://github.com/facebookincubator/create-react-app/issues/290
     // `web` extension prefixes have been added for better support
     // for React Native Web.
-    extensions: ['.web.js', '.mjs', '.js', '.json', '.web.jsx', '.jsx'],
+    extensions: ['.web.js', '.mjs', '.js', '.json', '.web.jsx', '.jsx', '.less'],
     alias: {
       
       // Support React Native Web
@@ -100,6 +105,15 @@ module.exports = {
   },
   module: {
     strictExportPresence: true,
+    loaders: [
+      {
+          test: /\.less$/,
+          loader: 'style-loader!css-loader!less-loader',
+          query: {
+              modifyVars: themeVariables
+          }
+      },
+    ],
     rules: [
       // TODO: Disable require.ensure as it's not a standard language feature.
       // We are waiting for https://github.com/facebookincubator/create-react-app/issues/2176.
@@ -149,6 +163,10 @@ module.exports = {
               // It enables caching results in ./node_modules/.cache/babel-loader/
               // directory for faster rebuilds.
               cacheDirectory: true,
+              presets: [],
+              plugins: [
+                  ['import', {libraryName: "antd", style: true}]
+              ]
             },
           },
           // "postcss" loader applies autoprefixer to our CSS.
@@ -188,6 +206,20 @@ module.exports = {
               },
             ],
           },
+          {
+            test: /\.less$/,
+            use: [
+                {loader: "style-loader"},
+                {loader: "css-loader"},
+                {
+                    loader: "less-loader",
+                    options: {
+                        javascriptEnabled: true,
+                        modifyVars: themeVariables
+                    }
+                }
+            ]
+        },
           // "file" loader makes sure those assets get served by WebpackDevServer.
           // When you `import` an asset, you get its (virtual) filename.
           // In production, they would get copied to the `build` folder.
